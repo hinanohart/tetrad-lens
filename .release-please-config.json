@@ -9,7 +9,6 @@
     "python": {
       "release-type": "python",
       "package-name": "tetrad-lens",
-      "changelog-path": "../CHANGELOG.md",
       "extra-files": [
         "src/tetrad_lens/__init__.py"
       ]
