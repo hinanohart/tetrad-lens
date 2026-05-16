@@ -42,7 +42,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        # tomllib is stdlib from 3.11+; the slopsquatting guard below uses it.
+        # 3.10 is supported by the package itself (see pyproject.toml) but the
+        # CI dep-audit step needs 3.11+. Local users on 3.10 are unaffected.
+        python-version: ["3.11", "3.12"]
     defaults:
       run:
         working-directory: python
@@ -102,10 +105,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Forbid archived google-github-actions/release-please-action
+      - name: Forbid archived release-please action in workflows
         shell: bash
         run: |
-          if git grep -nE 'google-github-actions/release-please-action' -- .github; then
+          # Match only actual `uses:` lines (not commentary in this very file).
+          if git grep -nE '^\s*uses:\s*google-github-actions/release-please-action' -- .github; then
             echo "::error::Use googleapis/release-please-action@v4 (the archived google-github-actions/* one is dead)."
             exit 1
           fi
