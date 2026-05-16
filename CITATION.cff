@@ -1,0 +1,53 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "tetrad-lens: a McLuhan-tetrad-shaped attribute schema and three-tier tagger for AI agent traces"
+abstract: >
+  tetrad-lens is a Langfuse / OpenTelemetry plugin that records the four
+  McLuhan tetrad laws (Enhance / Obsolesce / Retrieve / Reverse, from
+  McLuhan & McLuhan, Laws of Media: The New Science, University of Toronto
+  Press, 1988) as span attributes and ships a three-tier (heuristic +
+  LLM-assisted + human-review-queue) tagger. The Engelbart H-LAM/T
+  augmentation level is recorded on a secondary axis.
+authors:
+  - family-names: "tetrad-lens contributors"
+type: software
+license: Apache-2.0
+version: 0.1.0
+date-released: 2026-05-17
+repository-code: "https://github.com/hinanohart/tetrad-lens"
+keywords:
+  - McLuhan
+  - tetrad
+  - observability
+  - OpenTelemetry
+  - Langfuse
+  - LLM
+  - agent
+  - augmentation
+references:
+  - type: book
+    authors:
+      - family-names: McLuhan
+        given-names: Marshall
+      - family-names: McLuhan
+        given-names: Eric
+    title: "Laws of Media: The New Science"
+    publisher:
+      name: University of Toronto Press
+    year: 1988
+  - type: report
+    authors:
+      - family-names: Engelbart
+        given-names: "Douglas C."
+    title: "Augmenting Human Intellect: A Conceptual Framework"
+    institution:
+      name: SRI International
+    year: 1962
+  - type: book
+    authors:
+      - family-names: Galloway
+        given-names: "Alexander R."
+    title: "Protocol: How Control Exists after Decentralization"
+    publisher:
+      name: MIT Press
+    year: 2004

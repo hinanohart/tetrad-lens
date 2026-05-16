@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hinanohart/tetrad-lens/blob/main/schema/tetrad-v1.json",
+  "title": "tetrad-lens span attribute schema v1",
+  "description": "McLuhan tetrad (Laws of Media, 1988) shaped attribute schema for AI agent traces. Encoded as OpenTelemetry span attributes under the tetrad.* namespace, plus an Engelbart H-LAM/T augmentation level under engelbart.*. tetrad.figure_ground is derived from the four scores and is read-only.",
+  "type": "object",
+  "required": [
+    "tetrad.schema_version",
+    "tetrad.enhance",
+    "tetrad.obsolesce",
+    "tetrad.retrieve",
+    "tetrad.reverse"
+  ],
+  "properties": {
+    "tetrad.schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semver of this schema. v0.x = preview, v1.x = stable. Producers MUST set this so consumers can apply migrations."
+    },
+    "tetrad.enhance": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Score in [0, 1] for the law of enhancement. Question (McLuhan 1988): 'What does the artifact enhance, amplify, or intensify?' Multiple laws can co-exist on the same span (orthogonal per the original)."
+    },
+    "tetrad.enhance.rationale": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Free-text rationale produced by the tagger (heuristic / LLM-assisted / human). Required when the score is >= 0.5."
+    },
+    "tetrad.obsolesce": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Score in [0, 1] for the law of obsolescence. Question: 'What does it render obsolete or displace?'"
+    },
+    "tetrad.obsolesce.rationale": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "tetrad.retrieve": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Score in [0, 1] for the law of retrieval. Question: 'What does it recover that was previously obsolesced?'"
+    },
+    "tetrad.retrieve.rationale": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "tetrad.reverse": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Score in [0, 1] for the law of reversal. Question: 'When pushed to its limits, what does it reverse into?'"
+    },
+    "tetrad.reverse.rationale": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "tetrad.figure_ground": {
+      "type": "string",
+      "enum": ["figure", "ground", "both", "unclear"],
+      "readOnly": true,
+      "description": "DERIVED, read-only. Computed from the four scores by the consumer (e.g., dashboard). Producers MUST NOT set this directly; it is documented here only so consumers agree on the enumeration. Rough rule (subject to revision): figure = enhance+retrieve dominant; ground = obsolesce+reverse dominant; both = all four high; unclear = all four low."
+    },
+    "tetrad.tier": {
+      "type": "string",
+      "enum": ["heuristic", "llm", "annotation"],
+      "description": "Which tagger tier produced these scores. annotation always wins over llm, llm always wins over heuristic when the same span is re-scored."
+    },
+    "tetrad.confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Reliability score for the tagger output. Tier 2 must populate this from Judge Reliability Harness (arXiv 2603.05399) or equivalent. Tier 3 (annotation) may set 1.0."
+    },
+    "engelbart.level": {
+      "type": "string",
+      "enum": ["a", "b", "c"],
+      "description": "Engelbart H-LAM/T (1962 SRI report) augmentation level extended with the Bootstrap Institute ABC framing (1990s). A = improving the work, B = improving the way we improve the work, C = improving the way we improve the way we improve the work. NOT part of the 1962 paper; the ABC framing is a Bootstrap-era addition, cite accordingly."
+    },
+    "engelbart.role_split": {
+      "type": "object",
+      "description": "Optional secondary axis: distribution of work between human and AI on this span. Sums to <= 1.0; remainder is unattributed.",
+      "properties": {
+        "human": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "ai": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true,
+  "$comment": "All attribute names use dots as separators per OpenTelemetry semantic conventions. The tetrad.* and engelbart.* namespaces are not yet reserved with the OTel SIG; do not use the otel.* prefix here (it is reserved). Dual-emit alongside openinference-semantic-conventions and OTel GenAI is opt-in via the OTEL_SEMCONV_STABILITY_OPT_IN env var (see Layer 2 SDK docs)."
+}

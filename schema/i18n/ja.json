@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "laws": {
+    "enhance": {
+      "label": "強化",
+      "short_question": "何を強化するか",
+      "long_question": "この行為は何を強化・増幅・加速させるか",
+      "examples": [
+        "LLM エージェントは開発者 1 人あたりのコード生成速度を強化する",
+        "ベクトル検索はキーワード検索より recall を強化する"
+      ]
+    },
+    "obsolesce": {
+      "label": "陳腐化",
+      "short_question": "何を時代遅れにするか",
+      "long_question": "この行為は何を陳腐化させ、脇に押しやるか",
+      "examples": [
+        "embedding ベース検索は手作業 BM25 調整を陳腐化させる",
+        "エージェント開発はボイラープレート review 作業を陳腐化させる"
+      ]
+    },
+    "retrieve": {
+      "label": "復活",
+      "short_question": "何を取り戻すか",
+      "long_question": "かつて廃れた何を呼び戻すか",
+      "examples": [
+        "long-context LLM は「全部読む」読書スタイルを復活させる",
+        "音声エージェントは口承文化的な turn-taking を復活させる"
+      ]
+    },
+    "reverse": {
+      "label": "反転",
+      "short_question": "極限で何に反転するか",
+      "long_question": "限界まで押し進めた時、何に裏返るか",
+      "examples": [
+        "無限 agentic loop は計算資源の浪費と reward hacking に反転する",
+        "完璧に流暢なテキストは見分けがつかなさに反転し信頼を侵食する"
+      ]
+    }
+  },
+  "tiers": {
+    "heuristic": "ヒューリスティック (keyword / 構造規則、決定的)",
+    "llm": "LLM 補助 (Ollama local + 位置交換 + Judge Reliability Harness)",
+    "annotation": "人間 review queue (annotator が最終権威)"
+  },
+  "figure_ground": {
+    "figure": "Figure (強化+復活 優位) — 前景化された効果",
+    "ground": "Ground (陳腐化+反転 優位) — 背景の変化",
+    "both": "Figure と Ground 両方高い — 同時並行的に強い変化",
+    "unclear": "4 軸全て低い — span に tetrad 信号がほぼない"
+  }
+}

@@ -1,0 +1,15 @@
+# tetrad-lens code owners
+# Lines starting with `#` are comments. Each non-comment line maps a path
+# glob to one or more owners.
+
+# Default owner (solo maintainer — see CONTRIBUTING.md "Co-maintainer recruitment")
+*           @hinanohart
+
+# Schema (Layer 1) — changes here are the highest-risk surface
+/schema/    @hinanohart
+
+# CI + release automation
+/.github/   @hinanohart
+
+# Security policy
+/SECURITY.md @hinanohart

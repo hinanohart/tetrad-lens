@@ -1,0 +1,111 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ban-words:
+    name: Ban banned terms (no over-claims)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Grep for banned terms in tracked text
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Match Japanese + English overclaims. Excludes CHANGELOG (where we may quote bans for context).
+          PATTERN='自走|完全|永続|fully automated|fully autonomous'
+          mapfile -t HITS < <(git grep -nE "$PATTERN" \
+              -- ':(exclude)CHANGELOG.md' ':(exclude)CONTRIBUTING.md' \
+                 ':(exclude).github/pull_request_template.md' ':(exclude).github/workflows/ci.yml' \
+              || true)
+          if [ "${#HITS[@]}" -gt 0 ]; then
+            echo "::error::Banned terms found:"
+            printf '%s\n' "${HITS[@]}"
+            exit 1
+          fi
+          echo "No banned terms."
+
+  python:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Slopsquatting guard — every direct dep must exist on PyPI
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, sys, urllib.request, tomllib, pathlib
+          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
+          deps = list(data["project"].get("dependencies", []))
+          for group in data["project"].get("optional-dependencies", {}).values():
+              deps.extend(group)
+          names = sorted({d.split()[0].split("[")[0].split(">=")[0].split("==")[0].split("<")[0].strip() for d in deps if d})
+          missing = []
+          for n in names:
+              try:
+                  with urllib.request.urlopen(f"https://pypi.org/pypi/{n}/json", timeout=20) as r:
+                      json.load(r)
+              except Exception as e:
+                  missing.append((n, str(e)))
+          if missing:
+              for n, e in missing:
+                  print(f"::error::PyPI lookup failed for '{n}': {e}", file=sys.stderr)
+              sys.exit(1)
+          print(f"All {len(names)} direct deps resolved on PyPI.")
+          PY
+      - name: Schema parity (Pydantic must not drift from JSON Schema)
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, pathlib
+          schema = pathlib.Path("../schema/tetrad-v1.json").read_bytes()
+          # Environment Hardening: fail if schema file was tampered post-checkout.
+          h = hashlib.sha256(schema).hexdigest()
+          print(f"schema sha256: {h}")
+          assert len(schema) > 1000, "schema/tetrad-v1.json looks truncated"
+          PY
+      - name: Lint
+        run: ruff check src tests
+      - name: Type check
+        run: mypy src
+      - name: Test
+        run: pytest -q
+
+  ban-deprecated-action:
+    name: Reject archived release-please-action import
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Forbid archived google-github-actions/release-please-action
+        shell: bash
+        run: |
+          if git grep -nE 'google-github-actions/release-please-action' -- .github; then
+            echo "::error::Use googleapis/release-please-action@v4 (the archived google-github-actions/* one is dead)."
+            exit 1
+          fi

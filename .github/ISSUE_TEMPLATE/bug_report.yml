@@ -1,0 +1,48 @@
+name: Bug report
+description: Something is broken or behaving unexpectedly.
+title: "bug: "
+labels: ["bug", "triage"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description.
+      placeholder: When I do X, Y happens instead of Z.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: tetrad-lens version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.12"
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Minimal code or command to reproduce.
+      render: bash
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / traceback
+      render: text
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Affected layer
+      options:
+        - Layer 1 schema
+        - Layer 2 SDK / adapters
+        - Layer 3 tagger (heuristic / LLM / review queue)
+        - CI / release / docs
+        - Unsure
+    validations:
+      required: true

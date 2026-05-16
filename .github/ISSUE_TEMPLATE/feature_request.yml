@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose a feature, schema addition, or adapter.
+title: "feat: "
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem does this solve? Who benefits?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What would change, and where (schema / SDK / tagger / docs)?
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope check
+      description: We try to keep v0.x narrow. See CONTRIBUTING.md.
+      options:
+        - In scope (schema, SDK, tagger, Cline/Claude Code adapters)
+        - Out of scope (self-running pipelines, custom UI, other agent hosts)
+        - Unsure
+    validations:
+      required: true

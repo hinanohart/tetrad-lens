@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "laws": {
+    "enhance": {
+      "label": "Enhance",
+      "short_question": "What does it enhance?",
+      "long_question": "What does the artifact enhance, amplify, intensify, or accelerate?",
+      "examples": [
+        "an LLM agent enhances rate of code-writing per developer-hour",
+        "vector search enhances recall over keyword search"
+      ]
+    },
+    "obsolesce": {
+      "label": "Obsolesce",
+      "short_question": "What does it obsolesce?",
+      "long_question": "What does it render obsolete, displace, or push to the side?",
+      "examples": [
+        "embedding-based retrieval obsolesces hand-tuned BM25 parameters",
+        "agentic coding obsolesces some boilerplate review labor"
+      ]
+    },
+    "retrieve": {
+      "label": "Retrieve",
+      "short_question": "What does it retrieve?",
+      "long_question": "What previously obsolesced practice or sensibility does it bring back?",
+      "examples": [
+        "long-context LLMs retrieve the read-the-whole-thing reading style",
+        "voice agents retrieve oral-culture turn-taking"
+      ]
+    },
+    "reverse": {
+      "label": "Reverse",
+      "short_question": "What does it reverse into?",
+      "long_question": "When pushed to its limits, what does it flip into?",
+      "examples": [
+        "infinite agentic loops reverse into wasted compute and reward hacking",
+        "perfectly fluent text reverses into indistinguishability and trust erosion"
+      ]
+    }
+  },
+  "tiers": {
+    "heuristic": "Heuristic (keyword / structural rules, deterministic)",
+    "llm": "LLM-assisted (Ollama local + position-swap + Judge Reliability Harness)",
+    "annotation": "Human-review queue (annotator override, authoritative)"
+  },
+  "figure_ground": {
+    "figure": "Figure (enhance + retrieve dominant) — the foregrounded effect",
+    "ground": "Ground (obsolesce + reverse dominant) — the background shift",
+    "both": "Both figure and ground are high — strong, simultaneous change",
+    "unclear": "All four are low — span carries little tetrad signal"
+  }
+}
