@@ -10,7 +10,9 @@
 
 ## v0.1.x (queued)
 
-- TypeScript SDK parity (`@observe` wrapper around Langfuse TS v4 + LangfuseSpanProcessor)
+- PyPI Trusted Publisher (`.github/workflows/publish.yml` scaffold ships in v0.1.0; activating it needs PyPI-side OIDC setup)
+- TypeScript SDK parity (`@observe` wrapper around Langfuse TS v4 + LangfuseSpanProcessor). **Caveat**: the Vercel OpenTelemetry integration is not API-compatible with Langfuse v4's exporter; the TS adapter will document this explicitly rather than try to paper over it.
+- Implement the dual-emit toggle that `OTEL_SEMCONV_STABILITY_OPT_IN=tetrad/dup` currently advertises (env var is read but the second-namespace emit is not yet wired)
 - More heuristics + per-language keyword bundles
 - Custom Langfuse dashboard JSON for the four axes (not a custom UI — a saved chart config)
 

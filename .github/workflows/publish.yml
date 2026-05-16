@@ -1,0 +1,82 @@
+name: publish
+
+# Publish the Python package to PyPI on every GitHub Release.
+#
+# This workflow uses PyPI Trusted Publishers (OIDC) — there is no API token
+# in the repo. To activate it for the first time you must, on PyPI:
+#
+#   1. Create the project `tetrad-lens` (a maintainer needs a PyPI account).
+#   2. Under Settings → Publishing → "Add a new pending publisher":
+#         Owner       = hinanohart
+#         Repository  = tetrad-lens
+#         Workflow    = publish.yml
+#         Environment = pypi
+#   3. Save. The next GitHub Release event will publish.
+#
+# Until that one-time PyPI-side setup is done, this workflow runs and fails
+# the publish step (the OIDC token is rejected). That failure is loud and
+# safe — no token leakage path. Nothing else in the project depends on PyPI
+# publish succeeding.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish (e.g. v0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install build
+        run: python -m pip install --upgrade build
+      - name: Build
+        run: python -m build
+      - name: Smoke install the wheel
+        run: |
+          python -m venv /tmp/sanity
+          /tmp/sanity/bin/pip install dist/*.whl
+          /tmp/sanity/bin/python -c "import tetrad_lens; print(tetrad_lens.__version__)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: python/dist/
+
+  publish:
+    name: Publish to PyPI (Trusted Publisher / OIDC)
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/tetrad-lens/
+    permissions:
+      id-token: write   # required for OIDC; no API token used
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          # No `password:` here — the action uses the OIDC token via
+          # `id-token: write` above. PyPI must have the Trusted Publisher
+          # configured for this workflow path (see header comment).

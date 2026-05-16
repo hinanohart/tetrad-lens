@@ -4,23 +4,26 @@ Two ways to instrument:
 
 1. `@observe()` decorator — wraps Langfuse's own `@observe`, then attaches
    tetrad attributes when the function returns (or you call `tag_current_span`
-   from within).
-2. `install_processor()` — wires PII masking into the Langfuse v4 client.
-   Langfuse v4 manages its own OpenTelemetry SpanProcessor lifecycle from the
-   `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_HOST` env vars, so
-   this function only needs to attach the masking hook; it deliberately does
-   NOT call `LangfuseSpanProcessor(...)` directly (that constructor requires
-   credentials and would fail in credential-less environments).
+   from within). Supports both sync and async functions; for async the wrapper
+   returns an awaitable so callers `await observe(fn)(...)` cleanly.
+2. `install_processor()` — installs PII masking on the active Langfuse v4
+   client and propagates the tetrad attribute set into OTel baggage so child
+   spans inherit it. Langfuse v4 owns the OTel SpanProcessor lifecycle from
+   the `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_HOST` env
+   vars; this function never calls `LangfuseSpanProcessor(...)` directly
+   (its v4 constructor requires those credentials and we want this function
+   to no-op gracefully without them).
 
 PII masking is default ON.
 """
 
 from __future__ import annotations
 
+import asyncio
 import functools
-import os
+import logging
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import Any, TypeVar
 
 try:
@@ -42,7 +45,7 @@ except Exception:  # pragma: no cover - we keep working in environments without 
         return None
 
 
-from opentelemetry import trace
+from opentelemetry import baggage, context, trace
 
 from tetrad_lens.masking import mask_data
 from tetrad_lens.schema import TetradSpan
@@ -50,21 +53,22 @@ from tetrad_lens.schema import TetradSpan
 F = TypeVar("F", bound=Callable[..., Any])
 
 _INSTALLED = False
+_BAGGAGE_PREFIX = "tetrad."
 
 
-def install_processor(*, mask: bool = True) -> None:
-    """Wire PII masking into the Langfuse client and make sure the SpanProcessor is live.
+def install_processor(*, mask: bool = True, silence_langfuse_auth_warnings: bool = True) -> None:
+    """Wire PII masking into the Langfuse v4 client (idempotent).
 
-    Langfuse v4 reads `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_HOST`
-    from the environment and lazily constructs its own client + SpanProcessor on
-    first use. We do not call `LangfuseSpanProcessor(...)` directly because its
-    v4 constructor requires those credentials as positional arguments and we
-    want this to be a no-op when they are not set (smoke tests, CI without
-    secrets, etc).
+    Langfuse v4 stores the user-supplied masker on the client as ``_mask`` (set
+    inside ``Langfuse(mask=...)``). The public attribute ``mask`` is NOT read by
+    the upload path — assigning to it is a silent no-op. We therefore set
+    ``client._mask`` directly. The private-attribute access is the only post-init
+    path available; it is guarded so a different Langfuse version (where the
+    attribute moves or vanishes) degrades gracefully rather than crashes.
 
-    `mask=True` (default) installs `mask_data` on the Langfuse client. If the
-    client cannot be obtained (no credentials), we still mark this function as
-    "installed" so it doesn't keep retrying.
+    ``silence_langfuse_auth_warnings=True`` raises the Langfuse logger threshold
+    to ERROR so quickstart users without credentials don't see scary "no
+    public_key" warnings on stderr.
     """
     global _INSTALLED
     if _INSTALLED:
@@ -74,25 +78,39 @@ def install_processor(*, mask: bool = True) -> None:
         _INSTALLED = True
         return
 
-    if mask:
-        from contextlib import suppress
+    if silence_langfuse_auth_warnings:
+        logging.getLogger("langfuse").setLevel(logging.ERROR)
 
+    if mask:
         try:
             client = get_client()
         except Exception:
             client = None
-        # The Langfuse v4 client exposes a `mask` attribute that is called
-        # on every payload before upload. Attribute name has been stable
-        # since v4.0; we guard with hasattr to keep older/newer versions safe.
-        if client is not None and hasattr(client, "mask"):
+        if client is not None:
+            # v4 reads self._mask; setting self.mask is a no-op. We try both
+            # so a future v5 that flips the public/private split keeps working.
             with suppress(Exception):
-                client.mask = mask_data
-
-    # Honor OTEL_SEMCONV_STABILITY_OPT_IN: we don't toggle openinference's
-    # behavior from here, but we expose the env var so users know it exists.
-    _ = os.environ.get("OTEL_SEMCONV_STABILITY_OPT_IN", "tetrad/dup")
+                client._mask = mask_data  # type: ignore[attr-defined, assignment]
+            with suppress(Exception):
+                client.mask = mask_data  # type: ignore[attr-defined, assignment]
+            # Mirror the masker onto the inner resources object too — v4 stores
+            # the masker on the shared resources singleton and the OTel
+            # SpanProcessor reads it from there.
+            resources = getattr(client, "_resources", None)
+            if resources is not None:
+                with suppress(Exception):
+                    resources.mask = mask_data  # type: ignore[attr-defined]
 
     _INSTALLED = True
+
+
+def _attach_baggage(span_data: TetradSpan) -> None:
+    """Propagate tetrad attributes into OTel baggage so child spans inherit them."""
+    ctx = context.get_current()
+    for key, value in span_data.to_otel_attributes().items():
+        if key.startswith(_BAGGAGE_PREFIX):
+            ctx = baggage.set_baggage(key, str(value), context=ctx)
+    context.attach(ctx)
 
 
 def observe(
@@ -102,15 +120,15 @@ def observe(
     capture_output: bool = True,
     mask: bool = True,
 ) -> Callable[[F], F]:
-    """Drop-in replacement for `langfuse.observe()` that ensures the SpanProcessor is installed
-    and that PII masking defaults to ON.
+    """Drop-in replacement for ``langfuse.observe()`` that ensures PII masking
+    is on and preserves sync/async signature parity.
 
     Usage::
 
         from tetrad_lens import observe, tag_current_span, TetradScore, TetradSpan
 
         @observe(name="generate-response")
-        def generate(prompt: str) -> str:
+        async def generate(prompt: str) -> str:
             ...
     """
 
@@ -123,6 +141,15 @@ def observe(
             capture_output=capture_output,
         )(fn)
 
+        # Langfuse v4 already preserves the original signature on `wrapped`
+        # (sync wraps sync, async wraps async). Returning it directly avoids
+        # an extra sync layer that would hide the inner coroutine from
+        # frameworks that introspect with `asyncio.iscoroutinefunction`.
+        if asyncio.iscoroutinefunction(fn):
+            return wrapped  # type: ignore[return-value]
+
+        # For sync functions we still keep an explicit wrapper so the
+        # `functools.wraps` metadata stays bound to the user-visible callable.
         @functools.wraps(fn)
         def _runner(*args: Any, **kwargs: Any) -> Any:
             return wrapped(*args, **kwargs)
@@ -132,17 +159,21 @@ def observe(
     return _decorate
 
 
-def tag_current_span(span_data: TetradSpan) -> None:
+def tag_current_span(span_data: TetradSpan, *, propagate_baggage: bool = True) -> None:
     """Attach tetrad attributes to the currently active OTel span.
 
-    Call from inside a function decorated with `@observe(...)` or from anywhere
-    inside a Langfuse trace context.
+    Call from inside a function decorated with ``@observe(...)`` or from anywhere
+    inside a Langfuse trace context. When ``propagate_baggage`` is true the
+    tetrad attributes are also pushed into OTel baggage so child spans inherit
+    them (useful when a tagged parent span fans out to many leaves).
     """
     otel_span = trace.get_current_span()
-    if otel_span is None or not otel_span.is_recording():
-        return
-    for key, value in span_data.to_otel_attributes().items():
-        otel_span.set_attribute(key, value)
+    attrs = span_data.to_otel_attributes()
+    if otel_span is not None and otel_span.is_recording():
+        for key, value in attrs.items():
+            otel_span.set_attribute(key, value)
+    if propagate_baggage:
+        _attach_baggage(span_data)
 
 
 @contextmanager

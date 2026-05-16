@@ -9,7 +9,22 @@
     "tetrad.enhance",
     "tetrad.obsolesce",
     "tetrad.retrieve",
-    "tetrad.reverse"
+    "tetrad.reverse",
+    "tetrad.tier"
+  ],
+  "dependentRequired": {
+    "tetrad.tier": []
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"tetrad.tier": {"const": "llm"}},
+        "required": ["tetrad.tier"]
+      },
+      "then": {
+        "required": ["tetrad.confidence"]
+      }
+    }
   ],
   "properties": {
     "tetrad.schema_version": {

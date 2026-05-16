@@ -19,16 +19,21 @@ Use this skill when the user asks any of:
 
 ## How to invoke
 
-1. Make sure the MCP server is registered:
+1. Make sure the MCP server is registered for Claude Code. Two paths:
+
+   **Per-project**: drop a `.mcp.json` at the repo root:
    ```jsonc
-   // ~/.claude/mcp_servers.json
    {
-     "tetrad-lens": {
-       "command": "python",
-       "args": ["-m", "tetrad_lens.adapters.cline_mcp"]
+     "mcpServers": {
+       "tetrad-lens": {
+         "command": "python",
+         "args": ["-m", "tetrad_lens.adapters.cline_mcp"]
+       }
      }
    }
    ```
+
+   **Per-user**: add the same `mcpServers` block to your `~/.claude.json` (the global Claude Code config) — Claude Code merges both.
 2. Call `mcp__tetrad-lens__tetrad_tag` with the text you want scored.
 3. Render the four scores back to the user in a small table.
 

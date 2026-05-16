@@ -90,8 +90,18 @@ def figure_ground_of(span: TetradSpan, *, high: float = 0.6, low: float = 0.2) -
     """Derive tetrad.figure_ground from the four scores.
 
     This is a *consumer-side* derivation. Producers MUST NOT emit
-    tetrad.figure_ground directly (schema rule). The thresholds are
-    tunable but defaulted here so dashboards agree.
+    tetrad.figure_ground directly (schema rule). Thresholds are tunable:
+
+    * ``high`` — minimum mean (enhance+retrieve)/2 or (obsolesce+reverse)/2
+      for a side to count as "dominant".
+    * ``low`` — if NO axis exceeds ``low`` we return "unclear" (no signal);
+      otherwise the mixed-signal case also collapses to "unclear" but the
+      caller can inspect ``low`` to distinguish "weak signal" from "noisy"
+      via the raw scores on the span itself.
+
+    The schema only defines four enum values; "weak signal" and "noisy" both
+    map to "unclear" by design. Keep ``low`` in the signature so callers can
+    rebuild the partition without re-implementing the rest of the rule.
     """
     e, o, r, v = (
         span.enhance.score,
@@ -103,10 +113,9 @@ def figure_ground_of(span: TetradSpan, *, high: float = 0.6, low: float = 0.2) -
     ground = (o + v) / 2.0
     if figure >= high and ground >= high:
         return "both"
-    if figure >= high and ground < high:
+    if figure >= high:
         return "figure"
-    if ground >= high and figure < high:
+    if ground >= high:
         return "ground"
-    if max(e, o, r, v) < low:
-        return "unclear"
+    _ = low  # currently informational; see docstring
     return "unclear"

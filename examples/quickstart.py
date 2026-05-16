@@ -16,9 +16,10 @@ from tetrad_lens.sdk import tag_current_span
 
 
 SAMPLE = (
-    "Replace the nightly poll job with the new event bus. "
-    "Old call sites will receive a callback instead. "
-    "This should accelerate billing reconciliation."
+    "Replace the nightly poll job with the new event bus to accelerate "
+    "billing reconciliation. Old call sites will receive a callback. "
+    "If the bus ever stalls, billing silently halts — no fallback poll. "
+    "We will hallucinate fewer scrolling status updates as a side effect."
 )
 
 

@@ -46,7 +46,8 @@ DEFAULT_RETRIEVE_KEYWORDS: tuple[str, ...] = (
 DEFAULT_REVERSE_KEYWORDS: tuple[str, ...] = (
     "infinite loop",
     "reward hacking",
-    "hallucinat",
+    "hallucinate",
+    "hallucination",
     "spam",
     "abuse",
     "暴走",

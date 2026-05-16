@@ -3,7 +3,12 @@
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Layer 0  Distribution                                                │
-│   GitHub (Apache-2.0) · PyPI · Claude Code skill marketplace         │
+│   GitHub (Apache-2.0) — shipped                                      │
+│   PyPI — workflow scaffold in .github/workflows/publish.yml, needs   │
+│          PyPI-side Trusted Publisher setup (v0.1.1)                  │
+│   Claude Code skill — manual install via cp (per-project .mcp.json   │
+│          or ~/.claude.json); marketplace submission not pursued      │
+│          in v0.1                                                     │
 │   Releases via release-please (googleapis/release-please-action@v4) │
 └──────────────────────────────────────────────────────────────────────┘
                                   │
@@ -21,16 +26,24 @@
                                   │
                                   ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│ Layer 2  SDK  (Python first; TypeScript queued for v0.1.x)           │
-│   @observe       wraps Langfuse @observe + ensures masking is ON     │
-│   install_processor()  installs LangfuseSpanProcessor on the global  │
-│                        OTel tracer provider                          │
-│   tag_current_span(span_data)   attaches tetrad attributes to active │
+│ Layer 2  SDK  (Python; TypeScript queued for v0.1.x — note Vercel   │
+│           OTel exporter is NOT API-compatible with Langfuse v4)      │
+│   @observe       wraps Langfuse @observe; preserves sync/async       │
+│                  signature; ensures PII masking is wired in          │
+│   install_processor()  sets client._mask on the Langfuse v4 client   │
+│                        (assigning client.mask is silent no-op in v4) │
+│                        and silences "no public_key" warnings         │
+│   tag_current_span(span_data)   attaches tetrad attributes to the    │
+│                        active OTel span AND pushes them into OTel    │
+│                        baggage so child spans inherit                │
+│   tetrad_context(name)  context-manager fallback for ad-hoc use      │
 │   adapters/                                                          │
 │     cline_mcp.py            MCP server exposing tetrad_tag tool      │
 │     claude_code_skill.py    paired with skills/tetrad-lens/SKILL.md  │
-│   Dual-emit toggle: OTEL_SEMCONV_STABILITY_OPT_IN=tetrad/dup         │
-│   PII masking: default ON, opt-out per trace                         │
+│   Dual-emit toggle: OTEL_SEMCONV_STABILITY_OPT_IN=tetrad/dup  —      │
+│        env var is RESERVED for v0.1.x dual-emit; not implemented yet │
+│   PII masking: default ON, opt-out per trace; pattern set covers     │
+│        email/phone/secret-prefix/bearer/SSN/JWT/IPv4/Luhn-valid CC   │
 └──────────────────────────────────────────────────────────────────────┘
                                   │
                                   ▼
@@ -81,3 +94,19 @@ If you want a pipeline, build it on top of the SDK and tagger — the schema is 
 - No banned overclaim terms in source, README, or PR
 - Direct dependencies must resolve on PyPI
 - Schema file ≥ 1000 bytes (Environment Hardening, blocks tamper-truncation)
+- `pip-audit` runs on every PR; high-severity CVEs in transitive deps fail the build
+
+## Informational hard caps for derived agentic pipelines
+
+These bounds are **not** enforced by `tetrad-lens` itself (the project does
+not run a self-driving pipeline; see "Why Layer 4 is missing"), but the
+original R14 second-round design recorded them as guardrails for any
+downstream pipeline a user might build on top:
+
+| Bound       | Recommended cap        | Rationale                                    |
+|-------------|------------------------|----------------------------------------------|
+| Turn count  | ≤ 200 per sub-session  | futility-loop defense                        |
+| Token spend | ≤ 5 M per full run     | budget cap before human review               |
+| Dollar cost | ≤ \$200 per full run   | corollary of the token cap at 2026 prices   |
+
+Downstream pipelines that exceed these should pause and ask for confirmation.

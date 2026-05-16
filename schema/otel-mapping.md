@@ -22,18 +22,42 @@
 | `tetrad.retrieve.rationale`      | string  | <= 2000 chars                    | conditional | required when score >= 0.5 |
 | `tetrad.reverse`                 | double  | [0, 1]                           | yes      | |
 | `tetrad.reverse.rationale`       | string  | <= 2000 chars                    | conditional | required when score >= 0.5 |
-| `tetrad.figure_ground`           | string  | figure / ground / both / unclear | derived  | Read-only. Computed by consumer; producers MUST NOT set. |
-| `tetrad.tier`                    | string  | heuristic / llm / annotation     | yes      | |
-| `tetrad.confidence`              | double  | [0, 1]                           | conditional | required for tier=llm |
+| `tetrad.figure_ground`           | string  | figure / ground / both / unclear | derived  | Read-only (`readOnly: true`). Computed by consumer; producers MUST NOT set. |
+| `tetrad.tier`                    | string  | heuristic / llm / annotation     | yes      | Now in JSON Schema `required[]`. |
+| `tetrad.confidence`              | double  | [0, 1]                           | conditional | required when `tetrad.tier=llm` (enforced via JSON Schema `allOf`+`if`/`then`). |
 | `engelbart.level`                | string  | a / b / c                        | no       | Bootstrap Institute ABC framing (1990s) — NOT in the 1962 SRI report. |
 | `engelbart.role_split.human`     | double  | [0, 1]                           | no       | |
 | `engelbart.role_split.ai`        | double  | [0, 1]                           | no       | |
 
-## Dual-emit with OpenInference / OTel GenAI
+## `tetrad.figure_ground` derivation (consumer-side)
 
-Set `OTEL_SEMCONV_STABILITY_OPT_IN=tetrad/dup` (matches the openinference / OTel GenAI convention for opt-in dual-emit) to have the SDK emit both the `tetrad.*` attributes and the equivalent openinference / OTel GenAI attributes when a mapping exists.
+Producers MUST NOT emit this attribute. Consumers (dashboards / SDK
+helpers) derive it from the four scores using the rule below (defaults in
+parentheses; tunable per consumer):
 
-The default is **dual-emit ON** — turn it off with `OTEL_SEMCONV_STABILITY_OPT_IN=tetrad` (no `/dup` suffix) if you want only the `tetrad.*` namespace.
+```
+high = 0.6
+figure_score = (tetrad.enhance + tetrad.retrieve) / 2
+ground_score = (tetrad.obsolesce + tetrad.reverse) / 2
+
+if figure_score >= high and ground_score >= high: figure_ground = "both"
+elif figure_score >= high:                        figure_ground = "figure"
+elif ground_score >= high:                        figure_ground = "ground"
+else:                                             figure_ground = "unclear"
+```
+
+Cross-language consumers should converge on this rule for dashboard parity. The Python helper is `tetrad_lens.figure_ground_of(...)`.
+
+## Dual-emit with OpenInference / OTel GenAI (planned, v0.1.x)
+
+The environment variable `OTEL_SEMCONV_STABILITY_OPT_IN=tetrad/dup`
+(following the openinference / OTel GenAI convention for opt-in dual-emit)
+is **reserved** for emitting both the `tetrad.*` attributes and the
+equivalent openinference / OTel GenAI attributes when a mapping exists.
+
+**Status (v0.1.0)**: the SDK reads this env var but the dual-emit code path
+is not yet wired. Setting the variable has no effect today. Implementation
+is queued in v0.1.x — track in the repo issue list.
 
 ## Why not propose to the SIG immediately
 

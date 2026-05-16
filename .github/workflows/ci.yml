@@ -63,14 +63,24 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
-          import json, sys, urllib.request, tomllib, pathlib
+          import json, sys, tomllib, urllib.request, pathlib
+          # `packaging` is pulled in transitively by pip itself.
+          from packaging.requirements import Requirement
           data = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
           deps = list(data["project"].get("dependencies", []))
           for group in data["project"].get("optional-dependencies", {}).values():
               deps.extend(group)
-          names = sorted({d.split()[0].split("[")[0].split(">=")[0].split("==")[0].split("<")[0].strip() for d in deps if d})
+          names = set()
+          for spec in deps:
+              if not spec or spec.startswith("#"):
+                  continue
+              try:
+                  names.add(Requirement(spec).name.lower())
+              except Exception as e:
+                  print(f"::error::Could not parse requirement '{spec}': {e}", file=sys.stderr)
+                  sys.exit(1)
           missing = []
-          for n in names:
+          for n in sorted(names):
               try:
                   with urllib.request.urlopen(f"https://pypi.org/pypi/{n}/json", timeout=20) as r:
                       json.load(r)
@@ -82,6 +92,15 @@ jobs:
               sys.exit(1)
           print(f"All {len(names)} direct deps resolved on PyPI.")
           PY
+      - name: pip-audit (CVE scan on installed deps)
+        run: |
+          pip install --quiet pip-audit
+          # Fail on any high-or-critical CVE in the installed tree.
+          # Skipping known-unfixed advisories would happen here via --ignore-vuln.
+          pip-audit --strict --progress-spinner=off || {
+            echo "::warning::pip-audit found vulnerabilities; review above."
+            exit 1
+          }
       - name: Schema parity (Pydantic must not drift from JSON Schema)
         shell: bash
         run: |
@@ -93,6 +112,12 @@ jobs:
           print(f"schema sha256: {h}")
           assert len(schema) > 1000, "schema/tetrad-v1.json looks truncated"
           PY
+      - name: Install optional extras (so adapters import cleanly)
+        run: pip install -e ".[mcp,ollama]"
+      - name: Adapter import smoke test
+        run: |
+          python -c "from tetrad_lens.adapters import cline_mcp, claude_code_skill; print('adapters OK')"
+          python -c "from tetrad_lens import LLMTagger; print('ollama-aware tagger OK')"
       - name: Lint
         run: ruff check src tests
       - name: Type check

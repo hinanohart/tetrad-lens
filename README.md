@@ -3,9 +3,10 @@
 > A McLuhan-tetrad-shaped attribute schema and three-tier tagger for AI agent traces, on top of Langfuse and OpenTelemetry.
 
 [![CI](https://github.com/hinanohart/tetrad-lens/actions/workflows/ci.yml/badge.svg)](https://github.com/hinanohart/tetrad-lens/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/tetrad-lens.svg)](https://pypi.org/project/tetrad-lens/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Schema](https://img.shields.io/badge/schema-tetrad--v1-7c3aed.svg)](schema/tetrad-v1.json)
+
+> **v0.1.0 status**: ship-published on GitHub, not yet on PyPI. Install from source as shown below until the PyPI Trusted Publisher is live (tracked in [issue #5](https://github.com/hinanohart/tetrad-lens/issues/5) alongside the co-maintainer ask).
 
 ---
 
@@ -39,27 +40,47 @@ If your agent ships a refactor that enhances throughput but reverses into silent
 
 ## Install
 
+Until v0.1.0 lands on PyPI, install from this repo:
+
 ```bash
-pip install "tetrad-lens"             # core
-pip install "tetrad-lens[mcp]"        # + Cline / Claude Code MCP adapter
-pip install "tetrad-lens[ollama]"     # + LLM-assisted tagger
+# core
+pip install "git+https://github.com/hinanohart/tetrad-lens@v0.1.0#subdirectory=python"
+
+# + Cline / Claude Code MCP adapter
+pip install "tetrad-lens[mcp] @ git+https://github.com/hinanohart/tetrad-lens@v0.1.0#subdirectory=python"
+
+# + LLM-assisted tagger (requires a local Ollama instance)
+pip install "tetrad-lens[ollama] @ git+https://github.com/hinanohart/tetrad-lens@v0.1.0#subdirectory=python"
+```
+
+Once PyPI is live, this collapses to the conventional form:
+
+```bash
+pip install "tetrad-lens"           # core
+pip install "tetrad-lens[mcp]"      # + MCP adapter
+pip install "tetrad-lens[ollama]"   # + LLM-assisted tagger
 ```
 
 ## Quickstart
 
 ```python
-from tetrad_lens import observe
-from tetrad_lens.heuristic import tag_heuristically
-from tetrad_lens.sdk import tag_current_span
+from tetrad_lens import observe, tag_current_span, tag_heuristically
 
 @observe(name="my-step")
-def do_thing(plan: str) -> str:
+def do_thing(plan: str) -> dict[str, str]:
     span_data = tag_heuristically(plan)   # Tier 1 (deterministic)
-    tag_current_span(span_data)            # attaches tetrad.* attributes
-    return run(plan)
+    tag_current_span(span_data)           # attaches tetrad.* attributes
+    return {"plan": plan, "tetrad": span_data.to_otel_attributes()}
+
+do_thing(
+    "Replace the nightly poll job with the new event bus. "
+    "If the bus ever stalls, billing reconciliation silently halts."
+)
 ```
 
-Then open Langfuse and filter on `attribute["tetrad.reverse"] >= 0.5` for high second-order-risk spans. More filter recipes are in [`examples/langfuse_dashboard_filter.md`](examples/langfuse_dashboard_filter.md).
+The second sentence in the input is what `tetrad.reverse` should fire on — pushed to its limit, the change reverses into "no billing at all". Open Langfuse and filter `attribute["tetrad.reverse"] >= 0.5` to surface those spans; more filter recipes are in [`examples/langfuse_dashboard_filter.md`](examples/langfuse_dashboard_filter.md).
+
+Without `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` in your environment the SDK keeps working — attributes are attached to the local OTel span and the Langfuse exporter is a no-op. Langfuse's "no public_key" warnings are silenced by default; pass `install_processor(silence_langfuse_auth_warnings=False)` to re-enable them.
 
 ## Three tiers, on purpose
 
@@ -91,7 +112,7 @@ JSON Schema 2020-12 lives at [`schema/tetrad-v1.json`](schema/tetrad-v1.json). I
 
 ## Roadmap
 
-See [`docs/roadmap.md`](docs/roadmap.md). Highlights: TypeScript SDK parity, optional Hot/Cold and Acoustic Space axes, OpenTelemetry OTEP submission once two-language prototype is ready.
+See [`docs/roadmap.md`](docs/roadmap.md). Highlights: PyPI Trusted-Publisher (v0.1.1), TypeScript SDK parity (v0.1.x; note the Vercel OpenTelemetry integration is **not** API-compatible with Langfuse v4's exporter), optional Hot/Cold and Acoustic Space axes, OpenTelemetry OTEP submission once a two-language prototype is ready.
 
 ## Co-maintainer wanted
 
