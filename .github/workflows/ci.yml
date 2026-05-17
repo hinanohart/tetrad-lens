@@ -137,6 +137,6 @@ jobs:
         run: |
           # Match only actual `uses:` lines (not commentary in this very file).
           if git grep -nE '^\s*uses:\s*google-github-actions/release-please-action' -- .github; then
-            echo "::error::Use googleapis/release-please-action@v4 (the archived google-github-actions/* one is dead)."
+            echo "::error::Use googleapis/release-please-action@v5 (the archived google-github-actions/* one is dead)."
             exit 1
           fi
