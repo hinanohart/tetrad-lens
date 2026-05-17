@@ -96,8 +96,10 @@ jobs:
         run: |
           pip install --quiet pip-audit
           # --skip-editable: tetrad-lens itself is installed -e and may not be on PyPI yet.
-          # --ignore-vuln slots stay free for any known-unfixed advisories we accept.
-          pip-audit --strict --skip-editable --progress-spinner=off || {
+          # NOTE: --strict would re-fail on the skip itself, so we rely on pip-audit's
+          # default behavior (non-zero exit on real vulnerabilities) plus the explicit
+          # guard below. --ignore-vuln slots stay free for accepted unfixed advisories.
+          pip-audit --skip-editable --progress-spinner=off || {
             echo "::warning::pip-audit found vulnerabilities; review above."
             exit 1
           }
