@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Future releases are managed by `release-please` based on Conventional Commits.
 
+## [0.1.1](https://github.com/hinanohart/tetrad-lens/compare/v0.1.0...v0.1.1) (2026-05-17)
+
+
+### Bug Fixes
+
+* post-release audit — PII masking, schema required, exports, position-swap ([c3017ea](https://github.com/hinanohart/tetrad-lens/commit/c3017eac4ba0e702fcfa24bc1a1cc30af952ade0))
+
 ## 0.1.0 (2026-05-16)
 
 

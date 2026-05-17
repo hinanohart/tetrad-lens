@@ -23,7 +23,7 @@ from tetrad_lens.sdk import (
     tetrad_context,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 SCHEMA_VERSION = "1.0.0"
 
 __all__ = [
