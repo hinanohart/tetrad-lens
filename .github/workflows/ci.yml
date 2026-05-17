@@ -95,9 +95,9 @@ jobs:
       - name: pip-audit (CVE scan on installed deps)
         run: |
           pip install --quiet pip-audit
-          # Fail on any high-or-critical CVE in the installed tree.
-          # Skipping known-unfixed advisories would happen here via --ignore-vuln.
-          pip-audit --strict --progress-spinner=off || {
+          # --skip-editable: tetrad-lens itself is installed -e and may not be on PyPI yet.
+          # --ignore-vuln slots stay free for any known-unfixed advisories we accept.
+          pip-audit --strict --skip-editable --progress-spinner=off || {
             echo "::warning::pip-audit found vulnerabilities; review above."
             exit 1
           }
