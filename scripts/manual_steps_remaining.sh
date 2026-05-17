@@ -33,6 +33,7 @@ Items covered:
   2. (optional) GitHub Environment "pypi" protection rules
   3. Co-maintainer recruitment           (Issue #5 — human opt-in)
   4. Dependabot PR review                (PRs #1, #3 — judgment call)
+  5. First publish.yml dispatch          (GitHub anti-recursion workaround)
 USAGE
 }
 
@@ -126,6 +127,40 @@ print_step_dependabot() {
 EOF
 }
 
+print_step_first_publish() {
+  cat <<EOF
+
+╭─ Step 5 ── First publish.yml dispatch (GitHub trigger trap) ────────────────╮
+│                                                                              │
+│ GitHub *intentionally* does NOT fire the publish.yml workflow when           │
+│ release-please creates the release using the default GITHUB_TOKEN — it is   │
+│ anti-recursion behavior, not a bug. Symptom: v0.1.1 is tagged, the release  │
+│ page exists, but \`gh run list --workflow=publish.yml\` is empty.              │
+│                                                                              │
+│ Two ways to break the loop (you only need ONE, and only the first time):    │
+│                                                                              │
+│   A. Manual dispatch (what this script supports):                            │
+│        gh workflow run publish.yml -f tag=v0.1.1                             │
+│      The workflow accepts a workflow_dispatch input named "tag".             │
+│                                                                              │
+│   B. Give release-please a PAT (PERMANENT fix, but R11-sensitive):           │
+│        - Create a fine-grained PAT with "contents: write" + "pull_requests:  │
+│          write" on this repo only.                                           │
+│        - Settings → Secrets → Actions → New secret "RELEASE_PLEASE_TOKEN".  │
+│        - In .github/workflows/release-please.yml, change                     │
+│            token: \${{ secrets.GITHUB_TOKEN }}                               │
+│          to                                                                  │
+│            token: \${{ secrets.RELEASE_PLEASE_TOKEN }}                       │
+│        After that, every future release triggers publish.yml automatically.  │
+│                                                                              │
+│ Until Step 1 (PyPI Trusted Publisher) is done, publish.yml fails loudly at   │
+│ the OIDC handshake regardless of how it was triggered. That failure is      │
+│ safe — no token is exposed and no partial upload occurs.                     │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+EOF
+}
+
 show_status() {
   echo
   echo "===== Current status (live from GitHub) ====="
@@ -158,11 +193,18 @@ main() {
     --review)
       print_step_dependabot
       ;;
+    --first-publish)
+      print_step_first_publish
+      echo
+      echo "Latest tag:"
+      git -C "$(dirname "$0")/.." describe --tags --abbrev=0 2>/dev/null || true
+      ;;
     all|"")
       print_step_pypi
       print_step_environment
       print_step_comaintainer
       print_step_dependabot
+      print_step_first_publish
       show_status
       ;;
     *)
