@@ -8,7 +8,7 @@ version = "0.1.1"
 description = "McLuhan-tetrad-shaped attribute schema and three-tier tagger for AI agent traces, on top of Langfuse and OpenTelemetry."
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "Apache-2.0"}
+license = {text = "MIT"}
 authors = [
   {name = "tetrad-lens contributors"}
 ]
@@ -16,7 +16,7 @@ keywords = ["mcluhan", "tetrad", "observability", "opentelemetry", "langfuse", "
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: Apache Software License",
+  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
