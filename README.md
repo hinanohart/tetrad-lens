@@ -3,7 +3,7 @@
 > A McLuhan-tetrad-shaped attribute schema and three-tier tagger for AI agent traces, on top of Langfuse and OpenTelemetry.
 
 [![CI](https://github.com/hinanohart/tetrad-lens/actions/workflows/ci.yml/badge.svg)](https://github.com/hinanohart/tetrad-lens/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Schema](https://img.shields.io/badge/schema-tetrad--v1-7c3aed.svg)](schema/tetrad-v1.json)
 
 > **v0.1.0 status**: ship-published on GitHub, not yet on PyPI. Install from source as shown below until the PyPI Trusted Publisher is live (tracked in [issue #5](https://github.com/hinanohart/tetrad-lens/issues/5) alongside the co-maintainer ask).
