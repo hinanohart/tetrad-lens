@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Schema](https://img.shields.io/badge/schema-tetrad--v1-7c3aed.svg)](schema/tetrad-v1.json)
 
-> **v0.1.0 status**: ship-published on GitHub, not yet on PyPI. Install from source as shown below until the PyPI Trusted Publisher is live (tracked in [issue #5](https://github.com/hinanohart/tetrad-lens/issues/5) alongside the co-maintainer ask).
+> **v0.1.1 status**: ship-published on GitHub, not yet on PyPI. Install from source as shown below until the PyPI Trusted Publisher is live. Co-maintainer recruitment is tracked in [issue #5](https://github.com/hinanohart/tetrad-lens/issues/5).
 
 `tetrad-lens` annotates every AI agent span with four McLuhan-shaped scores — what the action **enhances**, **obsolesces**, **retrieves**, and (crucially) what it **reverses into** when pushed too far. Scores are written as OpenTelemetry span attributes and forwarded to Langfuse, making the second-order failure mode (`tetrad.reverse`) a first-class filter in your observability dashboard.
 
