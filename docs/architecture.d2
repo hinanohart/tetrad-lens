@@ -1,0 +1,48 @@
+direction: down
+explanation: |md
+  ### tetrad-lens
+  **McLuhan-tetrad attribute schema and three-tier tagger for AI agent traces on top of Langfuse and OpenTelemetry.**
+| {near: top-center}
+
+input: "① Agent span text" {shape: oval; style: {fill: "#6366f1"; font-color: "#ffffff"; stroke: "#4338ca"; bold: true; font-size: 18}}
+tier1: "② Tier 1 Heuristic tagger\nkeyword and structural rules" {style: {fill: "#0ea5e9"; font-color: "#ffffff"; stroke: "#0369a1"; bold: true; font-size: 16}}
+input -> tier1: "② tag"
+
+confidence: "Confidence Check" {
+  style: {fill: "#fffbeb"; stroke: "#f59e0b"; font-color: "#92400e"; bold: true; font-size: 16}
+  conf1: "③ Confidence adequate?"
+  tier2: "③ Tier 2 LLM tagger\nOllama local\nposition-swap consensus"
+  conf2: "③ Confidence adequate?"
+  tier3: "③ Tier 3 Human review queue\nLangfuse ANNOTATION wins"
+  *.style.fill: "#fef3c7"; *.style.font-color: "#92400e"
+}
+
+tier1 -> confidence.conf1: "③ check"
+confidence.conf1 -> confidence.tier2: "no → escalate"
+confidence.tier2 -> confidence.conf2: "③ check"
+confidence.conf2 -> confidence.tier3: "no → escalate"
+
+schema: "④ TetradSpan schema\ntetrad v1 JSON Schema" {style: {fill: "#dcfce7"; font-color: "#065f46"; stroke: "#10b981"; bold: true}}
+
+confidence.conf1 -> schema: "yes → emit"
+confidence.conf2 -> schema: "yes → emit"
+confidence.tier3 -> schema: "④ emit"
+
+output_zone: "Observability Output" {
+  style: {fill: "#f0fdf4"; stroke: "#10b981"; font-color: "#065f46"; bold: true; font-size: 16}
+  otel: "⑤ OTel span attributes\ntetrad dot namespace"
+  langfuse: "⑤ Langfuse Scores filter\ntetrad.enhance\ntetrad.reverse etc"
+  baggage: "⑤ OTel baggage\nchild spans inherit"
+  *.style.fill: "#dcfce7"; *.style.font-color: "#065f46"
+}
+
+schema -> output_zone.otel: "⑤ attach"
+schema -> output_zone.baggage: "⑤ propagate"
+output_zone.otel -> output_zone.langfuse: "⑤ forward"
+
+legend: "Legend" {
+  near: bottom-center
+  style: {fill: "#f8fafc"; stroke: "#cbd5e1"; font-size: 13}
+  e: "● entry"; c: "● tagger"; p: "● schema"; b: "● confidence"; d: "● output"
+  e.style.font-color: "#4338ca"; c.style.font-color: "#0369a1"; p.style.font-color: "#10b981"; b.style.font-color: "#f59e0b"; d.style.font-color: "#ec4899"
+}

@@ -14,20 +14,9 @@
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    Input[Agent span text] --> Tier1[Tier 1 Heuristic tagger<br>keyword and structural rules]
-    Tier1 --> Conf{Confidence<br>adequate?}
-    Conf -- yes --> Schema[TetradSpan schema<br>tetrad v1 JSON Schema]
-    Conf -- no --> Tier2[Tier 2 LLM tagger<br>Ollama local plus position-swap consensus]
-    Tier2 --> Conf2{Confidence<br>adequate?}
-    Conf2 -- yes --> Schema
-    Conf2 -- no --> Tier3[Tier 3 Human review queue<br>Langfuse ANNOTATION wins]
-    Tier3 --> Schema
-    Schema --> OTel[OTel span attributes<br>tetrad dot namespace]
-    OTel --> Langfuse[Langfuse Scores filter<br>tetrad dot enhance<br>tetrad dot reverse etc]
-    Schema --> Baggage[OTel baggage<br>child spans inherit]
-```
+<div align="center">
+  <img src="docs/architecture.png" alt="tetrad-lens architecture" width="840">
+</div>
 
 ---
 
@@ -149,3 +138,4 @@ Solo maintainer burnout has a 60% rate in 2026 across small-to-mid OSS projects.
 ## License
 
 [MIT](LICENSE).
+
