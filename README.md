@@ -16,17 +16,17 @@
 
 ```mermaid
 flowchart TD
-    Input[Agent span text] --> Tier1[Tier 1 Heuristic tagger\nkeyword and structural rules]
-    Tier1 --> Conf{Confidence\nadequate?}
-    Conf -- yes --> Schema[TetradSpan schema\ntetrad v1 JSON Schema]
-    Conf -- no --> Tier2[Tier 2 LLM tagger\nOllama local plus position-swap consensus]
-    Tier2 --> Conf2{Confidence\nadequate?}
+    Input[Agent span text] --> Tier1[Tier 1 Heuristic tagger<br>keyword and structural rules]
+    Tier1 --> Conf{Confidence<br>adequate?}
+    Conf -- yes --> Schema[TetradSpan schema<br>tetrad v1 JSON Schema]
+    Conf -- no --> Tier2[Tier 2 LLM tagger<br>Ollama local plus position-swap consensus]
+    Tier2 --> Conf2{Confidence<br>adequate?}
     Conf2 -- yes --> Schema
-    Conf2 -- no --> Tier3[Tier 3 Human review queue\nLangfuse ANNOTATION wins]
+    Conf2 -- no --> Tier3[Tier 3 Human review queue<br>Langfuse ANNOTATION wins]
     Tier3 --> Schema
-    Schema --> OTel[OTel span attributes\ntetrad dot namespace]
-    OTel --> Langfuse[Langfuse Scores filter\ntetrad dot enhance\ntetrad dot reverse etc]
-    Schema --> Baggage[OTel baggage\nchild spans inherit]
+    Schema --> OTel[OTel span attributes<br>tetrad dot namespace]
+    OTel --> Langfuse[Langfuse Scores filter<br>tetrad dot enhance<br>tetrad dot reverse etc]
+    Schema --> Baggage[OTel baggage<br>child spans inherit]
 ```
 
 ---
