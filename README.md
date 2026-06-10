@@ -8,6 +8,27 @@
 
 > **v0.1.0 status**: ship-published on GitHub, not yet on PyPI. Install from source as shown below until the PyPI Trusted Publisher is live (tracked in [issue #5](https://github.com/hinanohart/tetrad-lens/issues/5) alongside the co-maintainer ask).
 
+`tetrad-lens` annotates every AI agent span with four McLuhan-shaped scores — what the action **enhances**, **obsolesces**, **retrieves**, and (crucially) what it **reverses into** when pushed too far. Scores are written as OpenTelemetry span attributes and forwarded to Langfuse, making the second-order failure mode (`tetrad.reverse`) a first-class filter in your observability dashboard.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Input[Agent span text] --> Tier1[Tier 1 Heuristic tagger\nkeyword and structural rules]
+    Tier1 --> Conf{Confidence\nadequate?}
+    Conf -- yes --> Schema[TetradSpan schema\ntetrad v1 JSON Schema]
+    Conf -- no --> Tier2[Tier 2 LLM tagger\nOllama local plus position-swap consensus]
+    Tier2 --> Conf2{Confidence\nadequate?}
+    Conf2 -- yes --> Schema
+    Conf2 -- no --> Tier3[Tier 3 Human review queue\nLangfuse ANNOTATION wins]
+    Tier3 --> Schema
+    Schema --> OTel[OTel span attributes\ntetrad dot namespace]
+    OTel --> Langfuse[Langfuse Scores filter\ntetrad dot enhance\ntetrad dot reverse etc]
+    Schema --> Baggage[OTel baggage\nchild spans inherit]
+```
+
 ---
 
 ## What it is
@@ -82,7 +103,7 @@ The second sentence in the input is what `tetrad.reverse` should fire on — pus
 
 Without `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` in your environment the SDK keeps working — attributes are attached to the local OTel span and the Langfuse exporter is a no-op. Langfuse's "no public_key" warnings are silenced by default; pass `install_processor(silence_langfuse_auth_warnings=False)` to re-enable them.
 
-## Three tiers, on purpose
+## How it works: three tiers, on purpose
 
 ```
 Tier 1  heuristic    keyword / structural rules, deterministic, cheap
