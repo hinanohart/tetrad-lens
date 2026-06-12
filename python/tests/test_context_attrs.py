@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from opentelemetry import trace
+from opentelemetry import baggage, context, trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -50,3 +50,22 @@ def test_tag_current_span_attaches_to_active_span():
 def test_tag_current_span_no_active_span_is_noop():
     # Outside any tracer context, calling tag_current_span must not raise.
     tag_current_span(_span_data())
+
+
+def test_rationale_not_propagated_into_baggage():
+    # Baggage is serialized into outbound HTTP headers and reaches every
+    # downstream service. Free-text rationale must never be propagated, but
+    # numeric/categorical signals should be.
+    _make_exporter()
+    token = context.attach(context.get_current())
+    try:
+        with tetrad_context("test"):
+            tag_current_span(_span_data(), propagate_baggage=True)
+        bag = baggage.get_all()
+        assert bag.get("tetrad.enhance") == "0.7"
+        assert bag.get("tetrad.tier") == "heuristic"
+        assert "tetrad.enhance.rationale" not in bag
+        assert "tetrad.reverse.rationale" not in bag
+        assert not any(k.endswith(".rationale") for k in bag)
+    finally:
+        context.detach(token)

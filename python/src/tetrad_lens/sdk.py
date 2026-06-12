@@ -54,6 +54,12 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 _INSTALLED = False
 _BAGGAGE_PREFIX = "tetrad."
+# Free-text attribute suffixes that must NOT be propagated into OTel baggage.
+# Baggage is serialized into outbound HTTP headers and leaks to every
+# downstream service, so only numeric/categorical signals (score, confidence,
+# tier, schema_version) are safe to propagate. `tetrad.<axis>.rationale` is a
+# free-text field (up to 2000 chars) that can leak prompt content.
+_BAGGAGE_FREETEXT_SUFFIXES = (".rationale",)
 
 
 def install_processor(*, mask: bool = True, silence_langfuse_auth_warnings: bool = True) -> None:
@@ -108,8 +114,14 @@ def _attach_baggage(span_data: TetradSpan) -> None:
     """Propagate tetrad attributes into OTel baggage so child spans inherit them."""
     ctx = context.get_current()
     for key, value in span_data.to_otel_attributes().items():
-        if key.startswith(_BAGGAGE_PREFIX):
-            ctx = baggage.set_baggage(key, str(value), context=ctx)
+        if not key.startswith(_BAGGAGE_PREFIX):
+            continue
+        # Never propagate free-text fields (e.g. rationale): baggage is
+        # serialized into outbound HTTP headers and reaches every downstream
+        # service, where free-text can leak prompt content.
+        if key.endswith(_BAGGAGE_FREETEXT_SUFFIXES):
+            continue
+        ctx = baggage.set_baggage(key, str(value), context=ctx)
     context.attach(ctx)
 
 
